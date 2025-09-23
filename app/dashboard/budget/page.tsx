@@ -29,6 +29,7 @@ export default function BudgetPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
 
+  // Fetch budget & spend data
   const fetchBudgetData = async () => {
     if (!user) return
     try {
@@ -53,8 +54,8 @@ export default function BudgetPage() {
         .eq('user_id', user.id)
         .eq('month', currentMonth)
 
-      const thisMonthBudget = budgets && budgets.length > 0 ? budgets[0].amount : 0
-      setBudget(Number(thisMonthBudget))
+      const thisMonthBudget = budgets && budgets.length > 0 ? Number(budgets[0].amount) : 0
+      setBudget(thisMonthBudget)
       setRemaining(thisMonthBudget > 0 ? thisMonthBudget - monthExpenses : 0)
 
       if (thisMonthBudget > 0 && monthExpenses > thisMonthBudget) {
@@ -69,10 +70,7 @@ export default function BudgetPage() {
               spend: monthExpenses,
               budget: thisMonthBudget,
             }),
-          })
-            .then((res) => res.json())
-            .then((data) => console.log('Email sent:', data))
-            .catch((err) => console.error('Email error:', err))
+          }).catch((err) => console.error('Email error:', err))
         }
       }
     } catch (error) {
@@ -121,7 +119,10 @@ export default function BudgetPage() {
   const fullName = user?.user_metadata?.full_name || 'User'
   const welcomeMessage = `Welcome, ${fullName}`
   const getAvatarLetter = () =>
-    user?.user_metadata?.full_name?.[0].toUpperCase() || user?.email?.[0].toUpperCase() || '?'
+    user?.user_metadata?.full_name?.[0].toUpperCase() ||
+    user?.email?.[0].toUpperCase() ||
+    '?'
+
   const handleSignOut = async () => {
     await signOut()
     toast.success('Signed out successfully')
@@ -134,7 +135,7 @@ export default function BudgetPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
             <h1 className="text-4xl font-extrabold tracking-tight drop-shadow-sm
-              bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 
+              bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500
               bg-clip-text text-transparent">
               Budget
             </h1>
@@ -237,7 +238,7 @@ export default function BudgetPage() {
                       Used {((spend / budget) * 100).toFixed(1)}% of your budget
                     </p>
                     <Progress
-                      value={(spend / budget) * 100}
+                      value={budget > 0 ? (spend / budget) * 100 : 0}
                       className="h-3 bg-gray-200"
                     />
                     <p className="text-sm font-semibold text-green-600">

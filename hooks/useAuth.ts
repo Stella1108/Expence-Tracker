@@ -11,16 +11,24 @@ export function useAuth() {
   useEffect(() => {
     // Get initial session
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setUser(session?.user ?? null)
-      setLoading(false)
+      try {
+        const {
+          data: { session }
+        } = await supabase.auth.getSession()
+        setUser(session?.user ?? null)
+      } catch (err) {
+        console.error('Error fetching session:', err)
+        setUser(null)
+      } finally {
+        setLoading(false)
+      }
     }
 
     getSession()
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (_event, session) => {
         setUser(session?.user ?? null)
         setLoading(false)
       }
@@ -29,32 +37,26 @@ export function useAuth() {
     return () => subscription.unsubscribe()
   }, [])
 
-  const signUp = async (email: string, password: string, name: string) => {
+  const signUp = async (email: string, password: string, fullName: string) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: {
-          name
-        }
+        data: { full_name: fullName }
       }
     })
 
     if (error) throw error
 
-    // Create user profile
     if (data.user) {
-      const { error: profileError } = await supabase
-        .from('users')
-        .insert([
-          {
-            id: data.user.id,
-            email: data.user.email!,
-            name,
-            wallet_balance: 0
-          }
-        ])
-
+      const { error: profileError } = await supabase.from('users').insert([
+        {
+          id: data.user.id,
+          email: data.user.email!,
+          full_name: fullName,
+          wallet_balance: 0
+        }
+      ])
       if (profileError) throw profileError
     }
 
@@ -66,7 +68,6 @@ export function useAuth() {
       email,
       password
     })
-
     if (error) throw error
     return data
   }
@@ -74,6 +75,7 @@ export function useAuth() {
   const signOut = async () => {
     const { error } = await supabase.auth.signOut()
     if (error) throw error
+    setUser(null)
   }
 
   return {

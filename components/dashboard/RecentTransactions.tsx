@@ -41,7 +41,6 @@ const categoryIcons: Record<string, any> = {
   Entertainment: Gamepad2,
   Income: DollarSign,
 }
-
 export default function RecentTransactions({
   onTransactionAdded,
 }: RecentTransactionsProps) {
