@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -41,6 +41,7 @@ const categoryIcons: Record<string, any> = {
   Entertainment: Gamepad2,
   Income: DollarSign,
 }
+
 export default function RecentTransactions({
   onTransactionAdded,
 }: RecentTransactionsProps) {
@@ -49,7 +50,7 @@ export default function RecentTransactions({
   const [loading, setLoading] = useState(true)
   const [viewAll, setViewAll] = useState(false)
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     if (!user) return
     setLoading(true)
     try {
@@ -71,11 +72,11 @@ export default function RecentTransactions({
     } finally {
       setLoading(false)
     }
-  }
+  }, [user, viewAll])
 
   useEffect(() => {
     fetchTransactions()
-  }, [user, viewAll])
+  }, [fetchTransactions])
 
   return (
     <Card className="shadow-md bg-white border border-gray-200 text-gray-900">

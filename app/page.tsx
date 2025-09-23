@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { CreditCard } from 'lucide-react'
+import { CreditCard, TrendingUp, DollarSign, BarChart2, PieChart, Wallet } from 'lucide-react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 
@@ -26,6 +26,29 @@ export default function HomePage() {
       </div>
     )
   }
+
+  const features = [
+    {
+      title: 'Track Expenses',
+      description: 'Easily record and categorize all your transactions with our intuitive interface.',
+      icon: <TrendingUp className="h-12 w-12 text-indigo-500 mx-auto" />,
+    },
+    {
+      title: 'Manage Subscriptions',
+      description: 'Keep track of all your recurring subscriptions and never miss a billing date.',
+      icon: <Wallet className="h-12 w-12 text-pink-500 mx-auto" />,
+    },
+    {
+      title: 'Analytics & Insights',
+      description: 'Visualize your spending patterns with beautiful charts and detailed analytics.',
+      icon: <BarChart2 className="h-12 w-12 text-purple-500 mx-auto" />,
+    },
+    {
+      title: 'Budget Management',
+      description: 'Set budgets, track your wallet balance, and achieve your financial goals.',
+      icon: <PieChart className="h-12 w-12 text-green-500 mx-auto" />,
+    },
+  ]
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
@@ -64,28 +87,7 @@ export default function HomePage() {
 
         {/* Features Section */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-          {[
-            {
-              title: 'Track Expenses',
-              description: 'Easily record and categorize all your transactions with our intuitive interface.',
-              img: 'https://www.shutterstock.com/image-photo/budget-planning-fintech-app-money-260nw-2192100675.jpg',
-            },
-            {
-              title: 'Manage Subscriptions',
-              description: 'Keep track of all your recurring subscriptions and never miss a billing date.',
-              img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSEVSJ2Ba-3yfiyQvjf5u7-V4V8xLfrFdFhiw&s',
-            },
-            {
-              title: 'Analytics & Insights',
-              description: 'Visualize your spending patterns with beautiful charts and detailed analytics.',
-              img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSBtHMCbOnU_5ZXnYyXJb6BOM8hJDLS3wYnlw&s',
-            },
-            {
-              title: 'Budget Management',
-              description: 'Set budgets, track your wallet balance, and achieve your financial goals.',
-              img: 'https://media.licdn.com/dms/image/v2/D4E12AQHAaq6_fE-gzw/article-cover_image-shrink_720_1280/article-cover_image-shrink_720_1280/0/1699017801972?e=2147483647&v=beta&t=OfB6bLXO8eocrt4qipy2uR2NzxidhV8kCeKdpQW3fpk',
-            },
-          ].map((feature, idx) => (
+          {features.map((feature, idx) => (
             <motion.div
               key={feature.title}
               initial={{ opacity: 0, y: 20 }}
@@ -95,21 +97,11 @@ export default function HomePage() {
             >
               <Card className="text-center bg-white border border-gray-200 hover:border-indigo-300 hover:shadow-xl rounded-2xl transform hover:-translate-y-1 transition-all duration-300">
                 <CardHeader>
-                  {feature.img && (
-                    <div className="mb-4">
-                      <img
-                        src={feature.img}
-                        alt={feature.title}
-                        className="w-full h-48 object-cover rounded-xl shadow-md mx-auto"
-                      />
-                    </div>
-                  )}
+                  <div className="mb-4">{feature.icon}</div>
                   <CardTitle className="text-lg font-semibold text-gray-900">{feature.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription className="text-gray-600">
-                    {feature.description}
-                  </CardDescription>
+                  <CardDescription className="text-gray-600">{feature.description}</CardDescription>
                 </CardContent>
               </Card>
             </motion.div>

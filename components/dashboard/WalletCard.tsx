@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,7 +9,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger
+  DialogTrigger,
 } from '@/components/ui/dialog'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
@@ -27,20 +27,24 @@ interface WalletCardProps {
 }
 
 export function WalletCard({ refreshTrigger }: WalletCardProps) {
-  const [stats, setStats] = useState<WalletStats>({ balance: 0, spend: 0, remaining: 0 })
+  const [stats, setStats] = useState<WalletStats>({
+    balance: 0,
+    spend: 0,
+    remaining: 0,
+  })
   const [amount, setAmount] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const { user } = useAuth()
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     if (!user) return
     try {
-      const { data: txns } = await supabase
+      const { data: txns, error } = await supabase
         .from('transactions')
-        .select('id, amount, type, category, date, description')
+        .select('id, amount, type')
         .eq('user_id', user.id)
-        .order('date', { ascending: false })
+      if (error) throw error
 
       const balance =
         txns?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0
@@ -51,12 +55,13 @@ export function WalletCard({ refreshTrigger }: WalletCardProps) {
       setStats({ balance, spend, remaining })
     } catch (error) {
       console.error('Error fetching stats:', error)
+      toast.error('Failed to fetch wallet stats')
     }
-  }
+  }, [user])
 
   useEffect(() => {
     fetchStats()
-  }, [user, refreshTrigger])
+  }, [fetchStats, refreshTrigger])
 
   const handleAddMoney = async () => {
     if (!user || !amount) return
@@ -64,21 +69,32 @@ export function WalletCard({ refreshTrigger }: WalletCardProps) {
 
     try {
       const amt = parseFloat(amount)
-      await supabase.from('transactions').insert([{
-        user_id: user.id,
-        date: new Date().toISOString().split('T')[0],
-        category: 'Income',
-        subcategory: 'Wallet Top-up',
-        amount: amt,
-        type: 'income',
-        description: 'Wallet top-up'
-      }])
+      if (isNaN(amt) || amt <= 0) {
+        toast.error('Enter a valid amount')
+        setLoading(false)
+        return
+      }
+
+      const { error } = await supabase.from('transactions').insert([
+        {
+          user_id: user.id,
+          date: new Date().toISOString().split('T')[0],
+          category: 'Income',
+          subcategory: 'Wallet Top-up',
+          amount: amt,
+          type: 'income',
+          description: 'Wallet top-up',
+        },
+      ])
+
+      if (error) throw error
 
       setAmount('')
       setIsDialogOpen(false)
       toast.success(`₹${amt} added to wallet`)
       fetchStats()
     } catch (error) {
+      console.error('Add money error:', error)
       toast.error('Failed to add money')
     } finally {
       setLoading(false)
@@ -125,37 +141,36 @@ export function WalletCard({ refreshTrigger }: WalletCardProps) {
           </Dialog>
         </CardHeader>
 
-<CardContent className="pt-6">
-  <div className="flex flex-col space-y-4 text-center">
-    {/* Balance */}
-    <div className="p-4 rounded-xl bg-white/10 backdrop-blur-sm">
-      <div className="flex items-center justify-center mb-2">
-        <IndianRupee className="h-5 w-5 mr-2 opacity-80" />
-        <span className="text-sm font-medium">Balance</span>
-      </div>
-      <p className="text-xl font-bold">₹{stats.balance.toLocaleString('en-IN')}</p>
-    </div>
+        <CardContent className="pt-6">
+          <div className="flex flex-col space-y-4 text-center">
+            {/* Balance */}
+            <div className="p-4 rounded-xl bg-white/10 backdrop-blur-sm">
+              <div className="flex items-center justify-center mb-2">
+                <IndianRupee className="h-5 w-5 mr-2 opacity-80" />
+                <span className="text-sm font-medium">Balance</span>
+              </div>
+              <p className="text-xl font-bold">₹{stats.balance.toLocaleString('en-IN')}</p>
+            </div>
 
-    {/* Spend */}
-    <div className="p-4 rounded-xl bg-white/10 backdrop-blur-sm">
-      <div className="flex items-center justify-center mb-2">
-        <TrendingDown className="h-5 w-5 mr-2 opacity-80" />
-        <span className="text-sm font-medium">Spend</span>
-      </div>
-      <p className="text-xl font-bold text-red-300">₹{stats.spend.toLocaleString('en-IN')}</p>
-    </div>
+            {/* Spend */}
+            <div className="p-4 rounded-xl bg-white/10 backdrop-blur-sm">
+              <div className="flex items-center justify-center mb-2">
+                <TrendingDown className="h-5 w-5 mr-2 opacity-80" />
+                <span className="text-sm font-medium">Spend</span>
+              </div>
+              <p className="text-xl font-bold text-red-300">₹{stats.spend.toLocaleString('en-IN')}</p>
+            </div>
 
-    {/* Remaining */}
-    <div className="p-4 rounded-xl bg-white/10 backdrop-blur-sm">
-      <div className="flex items-center justify-center mb-2">
-        <IndianRupee className="h-5 w-5 mr-2 opacity-80" />
-        <span className="text-sm font-medium">Remaining</span>
-      </div>
-      <p className="text-xl font-bold text-green-300">₹{stats.remaining.toLocaleString('en-IN')}</p>
-    </div>
-  </div>
-</CardContent>
-
+            {/* Remaining */}
+            <div className="p-4 rounded-xl bg-white/10 backdrop-blur-sm">
+              <div className="flex items-center justify-center mb-2">
+                <IndianRupee className="h-5 w-5 mr-2 opacity-80" />
+                <span className="text-sm font-medium">Remaining</span>
+              </div>
+              <p className="text-xl font-bold text-green-300">₹{stats.remaining.toLocaleString('en-IN')}</p>
+            </div>
+          </div>
+        </CardContent>
       </Card>
     </div>
   )

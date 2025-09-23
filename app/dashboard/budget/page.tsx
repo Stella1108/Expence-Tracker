@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -29,13 +29,14 @@ export default function BudgetPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
 
-  // Fetch budget & spend data
-  const fetchBudgetData = async () => {
+  const fetchBudgetData = useCallback(async () => {
     if (!user) return
+
     try {
       const now = new Date()
       const currentMonth = now.toISOString().slice(0, 7)
 
+      // Fetch transactions
       const { data: txns } = await supabase
         .from('transactions')
         .select('amount, type, date')
@@ -48,6 +49,7 @@ export default function BudgetPage() {
 
       setSpend(monthExpenses)
 
+      // Fetch budget
       const { data: budgets } = await supabase
         .from('budgets')
         .select('month, amount')
@@ -58,31 +60,21 @@ export default function BudgetPage() {
       setBudget(thisMonthBudget)
       setRemaining(thisMonthBudget > 0 ? thisMonthBudget - monthExpenses : 0)
 
+      // ✅ Show alert if budget exceeded (NO API call now)
       if (thisMonthBudget > 0 && monthExpenses > thisMonthBudget) {
         toast.error('⚠️ You have crossed your budget limit!')
-
-        if (user?.email) {
-          fetch('/api/sendBudgetAlert', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: user.email,
-              spend: monthExpenses,
-              budget: thisMonthBudget,
-            }),
-          }).catch((err) => console.error('Email error:', err))
-        }
       }
     } catch (error) {
       console.error('Error fetching budget data:', error)
     }
-  }
+  }, [user])
 
   useEffect(() => {
     fetchBudgetData()
-  }, [user])
+  }, [fetchBudgetData])
 
   const handleSetBudget = async () => {
+    if (!user) return
     const newBudget = parseFloat(inputBudget)
     if (isNaN(newBudget) || newBudget <= 0) {
       toast.error('Please enter a valid budget amount')
@@ -92,7 +84,7 @@ export default function BudgetPage() {
     const currentMonth = new Date().toISOString().slice(0, 7)
 
     const { error } = await supabase.from('budgets').upsert({
-      user_id: user?.id,
+      user_id: user.id,
       month: currentMonth,
       amount: newBudget,
     })
@@ -124,6 +116,7 @@ export default function BudgetPage() {
     '?'
 
   const handleSignOut = async () => {
+    if (!signOut) return
     await signOut()
     toast.success('Signed out successfully')
   }
@@ -134,9 +127,11 @@ export default function BudgetPage() {
         {/* Header with Welcome + Avatar */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-4xl font-extrabold tracking-tight drop-shadow-sm
+            <h1
+              className="text-4xl font-extrabold tracking-tight drop-shadow-sm
               bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500
-              bg-clip-text text-transparent">
+              bg-clip-text text-transparent"
+            >
               Budget
             </h1>
             <p className="text-gray-600 text-lg mt-1">
@@ -235,7 +230,7 @@ export default function BudgetPage() {
                 {budget > 0 && (
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-gray-700">
-                      Used {((spend / budget) * 100).toFixed(1)}% of your budget
+                      Used {budget > 0 ? ((spend / budget) * 100).toFixed(1) : 0}% of your budget
                     </p>
                     <Progress
                       value={budget > 0 ? (spend / budget) * 100 : 0}
@@ -276,7 +271,11 @@ export default function BudgetPage() {
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value: any) => `₹${Number(value).toLocaleString('en-IN')}`} />
+                    <Tooltip
+                      formatter={(value: any) =>
+                        `₹${Number(value).toLocaleString('en-IN')}`
+                      }
+                    />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>

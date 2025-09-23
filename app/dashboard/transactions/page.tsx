@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -39,7 +39,7 @@ export default function TransactionsPage() {
   const [welcomeMessage, setWelcomeMessage] = useState('')
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
 
-  // Set welcome msg
+  // Set welcome message
   useEffect(() => {
     if (user?.user_metadata?.full_name) {
       setWelcomeMessage(`Welcome, ${user.user_metadata.full_name}!`)
@@ -49,8 +49,7 @@ export default function TransactionsPage() {
   }, [user])
 
   const getAvatarLetter = () => {
-    if (user?.user_metadata?.full_name)
-      return user.user_metadata.full_name.charAt(0).toUpperCase()
+    if (user?.user_metadata?.full_name) return user.user_metadata.full_name.charAt(0).toUpperCase()
     if (user?.email) return user.email.charAt(0).toUpperCase()
     return '?'
   }
@@ -60,7 +59,8 @@ export default function TransactionsPage() {
     window.location.href = '/login'
   }
 
-  const fetchTransactions = async () => {
+  // -------------------- Fetch Transactions --------------------
+  const fetchTransactions = useCallback(async () => {
     if (!user) return
     setLoading(true)
     try {
@@ -77,11 +77,11 @@ export default function TransactionsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user])
 
   useEffect(() => {
     fetchTransactions()
-  }, [user])
+  }, [fetchTransactions])
 
   const deleteTransaction = async (id: string) => {
     try {
@@ -93,7 +93,7 @@ export default function TransactionsPage() {
     }
   }
 
-  // 🔹 Group by Month
+  // -------------------- Group Transactions --------------------
   const transactionsByMonth = Object.entries(
     transactions.reduce<Record<string, Transaction[]>>((acc, t) => {
       const monthKey = format(new Date(t.date), 'MMMM yyyy')
@@ -103,7 +103,6 @@ export default function TransactionsPage() {
     }, {})
   ).sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
 
-  // 🔹 Group by Year
   const transactionsByYear = Object.entries(
     transactions.reduce<Record<string, Transaction[]>>((acc, t) => {
       const yearKey = format(new Date(t.date), 'yyyy')
@@ -113,7 +112,6 @@ export default function TransactionsPage() {
     }, {})
   ).sort(([a], [b]) => parseInt(b) - parseInt(a))
 
-  // 🔹 Group by Day
   const transactionsByDay = Object.entries(
     transactions.reduce<Record<string, Transaction[]>>((acc, t) => {
       const dayKey = format(new Date(t.date), 'dd MMM yyyy')
@@ -124,13 +122,9 @@ export default function TransactionsPage() {
   ).sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
 
   const groupedData =
-    view === 'year'
-      ? transactionsByYear
-      : view === 'day'
-      ? transactionsByDay
-      : transactionsByMonth
+    view === 'year' ? transactionsByYear : view === 'day' ? transactionsByDay : transactionsByMonth
 
-  const currentTransactions = groupedData[currentIndex]
+  const currentTransactions = groupedData[currentIndex] || [ '', [] ]
 
   const handlePrev = () => {
     if (currentIndex < groupedData.length - 1) setCurrentIndex(currentIndex + 1)
@@ -148,9 +142,7 @@ export default function TransactionsPage() {
             <h1 className="text-4xl font-extrabold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent tracking-tight drop-shadow-sm">
               Transactions
             </h1>
-            <p className="text-gray-600 text-lg mt-1">
-              Browse your transactions by {view}
-            </p>
+            <p className="text-gray-600 text-lg mt-1">Browse your transactions by {view}</p>
           </div>
 
           {/* Right side */}
@@ -201,7 +193,7 @@ export default function TransactionsPage() {
           ))}
         </div>
 
-        {/* Transactions */}
+        {/* Transactions Card */}
         {loading ? (
           <p className="text-gray-600 py-8">Loading...</p>
         ) : groupedData.length === 0 ? (
@@ -210,7 +202,6 @@ export default function TransactionsPage() {
           <Card className="rounded-2xl shadow-lg overflow-hidden bg-white border border-gray-200 text-gray-900">
             {/* Totals */}
             <div className="grid grid-cols-3 gap-4 p-4">
-              {/* Income */}
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 className="flex flex-col items-center rounded-xl shadow-md p-4 bg-green-50 border-l-4 border-green-400 text-gray-900"
@@ -225,13 +216,12 @@ export default function TransactionsPage() {
                   className="font-bold text-lg"
                 >
                   {currentTransactions[1]
-                    .filter(t => t.type === 'income')
-                    .reduce((sum, t) => sum + Number(t.amount), 0)
+                    .filter((t: Transaction) => t.type === 'income')
+                    .reduce((sum: number, t: Transaction) => sum + Number(t.amount), 0)
                     .toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}
                 </motion.p>
               </motion.div>
 
-              {/* Expenses */}
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 className="flex flex-col items-center rounded-xl shadow-md p-4 bg-red-50 border-l-4 border-red-400 text-gray-900"
@@ -246,18 +236,17 @@ export default function TransactionsPage() {
                   className="font-bold text-lg"
                 >
                   {currentTransactions[1]
-                    .filter(t => t.type === 'expense')
-                    .reduce((sum, t) => sum + Number(t.amount), 0)
+                    .filter((t: Transaction) => t.type === 'expense')
+                    .reduce((sum: number, t: Transaction) => sum + Number(t.amount), 0)
                     .toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}
                 </motion.p>
               </motion.div>
 
-              {/* Net */}
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 className={`flex flex-col items-center rounded-xl shadow-md p-4 border-l-4 ${
                   currentTransactions[1].reduce(
-                    (sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount),
+                    (sum: number, t: Transaction) => sum + (t.type === 'income' ? t.amount : -t.amount),
                     0
                   ) >= 0
                     ? 'bg-indigo-50 border-indigo-400'
@@ -275,7 +264,7 @@ export default function TransactionsPage() {
                 >
                   {currentTransactions[1]
                     .reduce(
-                      (sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount),
+                      (sum: number, t: Transaction) => sum + (t.type === 'income' ? t.amount : -t.amount),
                       0
                     )
                     .toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}
@@ -295,9 +284,7 @@ export default function TransactionsPage() {
                 <ChevronLeft className="h-5 w-5" />
               </Button>
 
-              <CardTitle className="text-gray-800 font-semibold">
-                {currentTransactions[0]}
-              </CardTitle>
+              <CardTitle className="text-gray-800 font-semibold">{currentTransactions[0]}</CardTitle>
 
               <Button
                 variant="ghost"
@@ -312,7 +299,7 @@ export default function TransactionsPage() {
 
             {/* Transactions List */}
             <CardContent className="divide-y divide-gray-200 px-4 py-2">
-              {currentTransactions[1].map(transaction => (
+              {currentTransactions[1].map((transaction: Transaction) => (
                 <motion.div
                   key={transaction.id}
                   whileHover={{ scale: 1.01 }}
@@ -320,9 +307,7 @@ export default function TransactionsPage() {
                 >
                   <div>
                     <p className="font-medium text-gray-900">{transaction.subcategory}</p>
-                    <p className="text-sm text-gray-600">
-                      {format(new Date(transaction.date), 'dd MMM yyyy')}
-                    </p>
+                    <p className="text-sm text-gray-600">{format(new Date(transaction.date), 'dd MMM yyyy')}</p>
                     {transaction.description && (
                       <p className="text-sm text-gray-700">{transaction.description}</p>
                     )}
@@ -337,10 +322,7 @@ export default function TransactionsPage() {
                       }`}
                     >
                       {transaction.type === 'income' ? '+' : '-'}
-                      {transaction.amount.toLocaleString('en-IN', {
-                        style: 'currency',
-                        currency: 'INR',
-                      })}
+                      {transaction.amount.toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}
                     </p>
                     <Button
                       variant="ghost"

@@ -1,24 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell, BarChart, Bar
 } from 'recharts'
 import { DollarSign, CreditCard, BarChart2, TrendingUp, LogOut } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -38,7 +27,7 @@ export default function AnalyticsPage() {
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D']
 
   // -------------------- Fetch Analytics --------------------
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     if (!user) return
     setLoading(true)
     try {
@@ -100,9 +89,9 @@ export default function AnalyticsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user])
 
-  useEffect(() => { fetchAnalytics() }, [user])
+  useEffect(() => { fetchAnalytics() }, [fetchAnalytics])
 
   // -------------------- Computed Metrics --------------------
   const totalIncome = monthlyData.reduce((sum, d) => sum + d.income, 0)
@@ -112,7 +101,7 @@ export default function AnalyticsPage() {
 
   const fullName = user?.user_metadata?.full_name || 'User'
   const welcomeMessage = `Welcome, ${fullName}`
-  const getAvatarLetter = () => user?.user_metadata?.full_name?.[0].toUpperCase() || user?.email?.[0].toUpperCase() || '?'
+  const getAvatarLetter = () => user?.user_metadata?.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || '?'
   const handleSignOut = async () => { await signOut(); toast.success('Signed out successfully') }
 
   if (loading) return (
@@ -203,6 +192,7 @@ export default function AnalyticsPage() {
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Income vs Expenses */}
           <Card className="bg-white border border-gray-200 shadow">
             <CardHeader>
               <CardTitle className="text-gray-900">Income vs Expenses Trend</CardTitle>
@@ -222,6 +212,7 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
 
+          {/* Expense Categories */}
           <Card className="bg-white border border-gray-200 shadow">
             <CardHeader>
               <CardTitle className="text-gray-900">Expense Categories (This Month)</CardTitle>
@@ -249,6 +240,7 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
 
+          {/* Monthly Spending Comparison */}
           <Card className="bg-white border border-gray-200 shadow">
             <CardHeader>
               <CardTitle className="text-gray-900">Monthly Spending Comparison</CardTitle>
@@ -267,6 +259,7 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
 
+          {/* Net Income */}
           <Card className="bg-white border border-gray-200 shadow">
             <CardHeader>
               <CardTitle className="text-gray-900">Net Income (Income - Expenses)</CardTitle>

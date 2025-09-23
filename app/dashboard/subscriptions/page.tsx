@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -14,10 +14,7 @@ import { format, isBefore } from 'date-fns'
 import { categoryStyles } from '@/lib/categoryStyles'
 
 // Safe date parser
-const safeDate = (dateStr: string) => {
-  if (!dateStr) return new Date()
-  return new Date(dateStr + 'T00:00:00')
-}
+const safeDate = (dateStr: string) => (dateStr ? new Date(dateStr + 'T00:00:00') : new Date())
 
 interface Subscription {
   id: string
@@ -41,34 +38,16 @@ export default function SubscriptionsPage() {
 
   const fullName = user?.user_metadata?.full_name || 'User'
   const welcomeMessage = `Welcome, ${fullName}`
-
-  const getAvatarLetter = () => {
-    if (user?.user_metadata?.full_name) return user.user_metadata.full_name[0].toUpperCase()
-    if (user?.email) return user.email[0].toUpperCase()
-    return '?'
-  }
+  const getAvatarLetter = () =>
+    user?.user_metadata?.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || '?'
 
   const handleSignOut = async () => {
     await signOut()
     toast.success('Signed out successfully')
   }
 
-  // Toggle subscription active/inactive
-  const toggleSubscriptionStatus = async (sub: Subscription) => {
-    if (!user) return
-    try {
-      const newStatus = !sub.is_active
-      await supabase.from('subscriptions').update({ is_active: newStatus }).eq('id', sub.id)
-      toast.success(`Subscription ${newStatus ? 'activated' : 'deactivated'}`)
-      fetchSubscriptions()
-    } catch (error) {
-      console.error(error)
-      toast.error('Failed to update subscription status')
-    }
-  }
-
-  // Fetch subscriptions & send alerts
-  const fetchSubscriptions = async () => {
+  // -------------------- Fetch Subscriptions --------------------
+  const fetchSubscriptions = useCallback(async () => {
     if (!user) return
     setLoading(true)
     try {
@@ -88,17 +67,32 @@ export default function SubscriptionsPage() {
           }
         }
       }
+
       setSubscriptions(data || [])
     } catch (error) {
       console.error('Error fetching subscriptions:', error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [user])
 
   useEffect(() => {
     fetchSubscriptions()
-  }, [user])
+  }, [fetchSubscriptions])
+
+  // -------------------- Toggle subscription --------------------
+  const toggleSubscriptionStatus = async (sub: Subscription) => {
+    if (!user) return
+    try {
+      const newStatus = !sub.is_active
+      await supabase.from('subscriptions').update({ is_active: newStatus }).eq('id', sub.id)
+      toast.success(`Subscription ${newStatus ? 'activated' : 'deactivated'}`)
+      fetchSubscriptions()
+    } catch (error) {
+      console.error(error)
+      toast.error('Failed to update subscription status')
+    }
+  }
 
   return (
     <DashboardLayout>
@@ -110,11 +104,18 @@ export default function SubscriptionsPage() {
           </h1>
 
           <div className="flex items-center gap-4">
-            {/* Add Subscription Button */}
-            <Dialog open={isFormOpen} onOpenChange={(open) => { setIsFormOpen(open); if(!open) setEditingSub(null) }}>
+            {/* Add/Edit Subscription Button */}
+            <Dialog
+              open={isFormOpen}
+              onOpenChange={(open) => {
+                setIsFormOpen(open)
+                if (!open) setEditingSub(null)
+              }}
+            >
               <DialogTrigger asChild>
                 <Button className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl shadow-md transition-all duration-200">
-                  <Plus className="h-4 w-4 mr-2" /> {editingSub ? 'Edit Subscription' : 'Add Subscription'}
+                  <Plus className="h-4 w-4 mr-2" />
+                  {editingSub ? 'Edit Subscription' : 'Add Subscription'}
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-md rounded-2xl shadow-2xl bg-white border border-gray-300 text-gray-900">
@@ -123,14 +124,13 @@ export default function SubscriptionsPage() {
                     {editingSub ? 'Edit Subscription' : 'Add New Subscription'}
                   </DialogTitle>
                 </DialogHeader>
-                {/* You can add your form content here */}
+                {/* TODO: Add your subscription form content here */}
               </DialogContent>
             </Dialog>
 
             {/* User Avatar */}
             <div className="flex items-center gap-3 relative">
               <span className="text-lg font-medium text-gray-800">{welcomeMessage}</span>
-
               <div className="relative">
                 <div
                   className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-lg cursor-pointer"
@@ -187,7 +187,9 @@ export default function SubscriptionsPage() {
                             End: {format(safeDate(sub.end_date), 'MMM dd, yyyy')}
                           </p>
                           <p
-                            className={`mt-1 text-xs font-bold ${sub.is_active ? 'text-green-600' : 'text-red-600'}`}
+                            className={`mt-1 text-xs font-bold ${
+                              sub.is_active ? 'text-green-600' : 'text-red-600'
+                            }`}
                           >
                             {sub.is_active ? 'Active' : 'Inactive'}
                           </p>
