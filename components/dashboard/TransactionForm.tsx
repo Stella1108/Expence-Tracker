@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -91,6 +91,7 @@ export function TransactionForm({ isOpen, onClose, onSuccess }: TransactionFormP
       })
     } catch (error) {
       toast.error('❌ Failed to add transaction')
+      console.error(error)
     } finally {
       setLoading(false)
     }
@@ -111,10 +112,10 @@ export function TransactionForm({ isOpen, onClose, onSuccess }: TransactionFormP
             <Label className="text-sm font-semibold text-gray-700">Type</Label>
             <Select
               value={formData.type}
-              onValueChange={(value: 'income' | 'expense') =>
+              onValueChange={(value: string) =>
                 setFormData((prev) => ({
                   ...prev,
-                  type: value,
+                  type: value as 'income' | 'expense',
                   category: '',
                   subcategory: '',
                 }))
@@ -135,7 +136,7 @@ export function TransactionForm({ isOpen, onClose, onSuccess }: TransactionFormP
             <Label className="text-sm font-semibold text-gray-700">Category</Label>
             <Select
               value={formData.category}
-              onValueChange={(value) =>
+              onValueChange={(value: string) =>
                 setFormData((prev) => ({ ...prev, category: value, subcategory: '' }))
               }
             >
@@ -160,7 +161,9 @@ export function TransactionForm({ isOpen, onClose, onSuccess }: TransactionFormP
             <Label className="text-sm font-semibold text-gray-700">Subcategory</Label>
             <Select
               value={formData.subcategory}
-              onValueChange={(value) => setFormData((prev) => ({ ...prev, subcategory: value }))}
+              onValueChange={(value: string) =>
+                setFormData((prev) => ({ ...prev, subcategory: value }))
+              }
               disabled={!formData.category}
             >
               <SelectTrigger className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900">
@@ -189,7 +192,9 @@ export function TransactionForm({ isOpen, onClose, onSuccess }: TransactionFormP
               step="0.01"
               placeholder="0.00"
               value={formData.amount}
-              onChange={(e) => setFormData((prev) => ({ ...prev, amount: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, amount: e.target.value }))
+              }
               required
               className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 placeholder-gray-400"
             />
@@ -201,7 +206,9 @@ export function TransactionForm({ isOpen, onClose, onSuccess }: TransactionFormP
             <Input
               type="date"
               value={formData.date}
-              onChange={(e) => setFormData((prev) => ({ ...prev, date: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, date: e.target.value }))
+              }
               required
               className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 placeholder-gray-400"
             />
@@ -213,7 +220,9 @@ export function TransactionForm({ isOpen, onClose, onSuccess }: TransactionFormP
             <Textarea
               placeholder="Add a note about this transaction"
               value={formData.description}
-              onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, description: e.target.value }))
+              }
               className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 placeholder-gray-400"
             />
           </div>
@@ -231,7 +240,7 @@ export function TransactionForm({ isOpen, onClose, onSuccess }: TransactionFormP
             <Button
               type="submit"
               disabled={loading}
-              className="rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white px-4"
+              className="rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-4"
             >
               {loading ? 'Adding...' : 'Add Transaction'}
             </Button>

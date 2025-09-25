@@ -4,13 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { toast } from 'sonner'
@@ -27,11 +21,7 @@ interface WalletCardProps {
 }
 
 export function WalletCard({ refreshTrigger }: WalletCardProps) {
-  const [stats, setStats] = useState<WalletStats>({
-    balance: 0,
-    spend: 0,
-    remaining: 0,
-  })
+  const [stats, setStats] = useState<WalletStats>({ balance: 0, spend: 0, remaining: 0 })
   const [amount, setAmount] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -40,16 +30,11 @@ export function WalletCard({ refreshTrigger }: WalletCardProps) {
   const fetchStats = useCallback(async () => {
     if (!user) return
     try {
-      const { data: txns, error } = await supabase
-        .from('transactions')
-        .select('id, amount, type')
-        .eq('user_id', user.id)
+      const { data: txns, error } = await supabase.from('transactions').select('id, amount, type').eq('user_id', user.id)
       if (error) throw error
 
-      const balance =
-        txns?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0
-      const spend =
-        txns?.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0
+      const balance = txns?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0
+      const spend = txns?.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0
       const remaining = balance - spend
 
       setStats({ balance, spend, remaining })
@@ -75,17 +60,15 @@ export function WalletCard({ refreshTrigger }: WalletCardProps) {
         return
       }
 
-      const { error } = await supabase.from('transactions').insert([
-        {
-          user_id: user.id,
-          date: new Date().toISOString().split('T')[0],
-          category: 'Income',
-          subcategory: 'Wallet Top-up',
-          amount: amt,
-          type: 'income',
-          description: 'Wallet top-up',
-        },
-      ])
+      const { error } = await supabase.from('transactions').insert([{
+        user_id: user.id,
+        date: new Date().toISOString().split('T')[0],
+        category: 'Income',
+        subcategory: 'Wallet Top-up',
+        amount: amt,
+        type: 'income',
+        description: 'Wallet top-up',
+      }])
 
       if (error) throw error
 
@@ -122,18 +105,8 @@ export function WalletCard({ refreshTrigger }: WalletCardProps) {
                 <DialogTitle className="text-lg font-semibold">Add Money</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                <Input
-                  type="number"
-                  placeholder="Enter amount"
-                  value={amount}
-                  onChange={e => setAmount(e.target.value)}
-                  className="rounded-xl"
-                />
-                <Button
-                  onClick={handleAddMoney}
-                  disabled={loading}
-                  className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white hover:opacity-90 transition"
-                >
+                <Input type="number" placeholder="Enter amount" value={amount} onChange={e => setAmount(e.target.value)} className="rounded-xl" />
+                <Button onClick={handleAddMoney} disabled={loading} className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white hover:opacity-90 transition">
                   {loading ? 'Processing...' : 'Add Money'}
                 </Button>
               </div>

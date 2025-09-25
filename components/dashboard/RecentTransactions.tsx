@@ -26,10 +26,12 @@ interface Transaction {
   amount: number
   type: 'income' | 'expense'
   description: string
+  subscription_id?: string // optional, to link with subscriptions
 }
 
 interface RecentTransactionsProps {
   onTransactionAdded?: (newTransaction: Transaction) => void
+  refreshTrigger?: number // optional trigger to reload transactions
 }
 
 const categoryIcons: Record<string, any> = {
@@ -44,6 +46,7 @@ const categoryIcons: Record<string, any> = {
 
 export default function RecentTransactions({
   onTransactionAdded,
+  refreshTrigger,
 }: RecentTransactionsProps) {
   const { user } = useAuth()
   const [transactions, setTransactions] = useState<Transaction[]>([])
@@ -74,9 +77,16 @@ export default function RecentTransactions({
     }
   }, [user, viewAll])
 
+  // Fetch whenever component mounts or refreshTrigger changes
   useEffect(() => {
     fetchTransactions()
-  }, [fetchTransactions])
+  }, [fetchTransactions, refreshTrigger])
+
+  // Optional: call this when a new transaction is added externally
+  const handleNewTransaction = (newTransaction: Transaction) => {
+    setTransactions(prev => [newTransaction, ...prev])
+    onTransactionAdded?.(newTransaction)
+  }
 
   return (
     <Card className="shadow-md bg-white border border-gray-200 text-gray-900">
@@ -103,7 +113,7 @@ export default function RecentTransactions({
           </p>
         ) : (
           <div className="space-y-3">
-            {transactions.map((transaction) => {
+            {transactions.map(transaction => {
               const Icon = categoryIcons[transaction.category] || DollarSign
               return (
                 <div
@@ -126,7 +136,7 @@ export default function RecentTransactions({
                     </div>
                     <div>
                       <p className="font-medium flex items-center text-gray-900">
-                        {transaction.subcategory}
+                        {transaction.subcategory}{' '}
                         <Badge
                           className={`ml-2 text-xs ${
                             transaction.type === 'income'
@@ -163,6 +173,11 @@ export default function RecentTransactions({
                     >
                       {transaction.category}
                     </Badge>
+                    {transaction.subscription_id && (
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Sub ID: {transaction.subscription_id}
+                      </p>
+                    )}
                   </div>
                 </div>
               )

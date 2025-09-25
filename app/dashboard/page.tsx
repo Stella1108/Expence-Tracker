@@ -1,12 +1,12 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { WalletCard } from '@/components/dashboard/WalletCard'
 import RecentTransactions from '@/components/dashboard/RecentTransactions'
-import { Button } from '@/components/ui/button'
-import { LogOut } from 'lucide-react'
-import { useState, useEffect } from 'react'
 import { TransactionForm } from '@/components/dashboard/TransactionForm'
+import { Button } from '@/components/ui/button'
+import { LogOut, Plus } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 
@@ -17,6 +17,7 @@ export default function DashboardPage() {
   const { user } = useAuth()
   const [welcomeMessage, setWelcomeMessage] = useState('')
 
+  // Set welcome message
   useEffect(() => {
     if (user?.user_metadata?.full_name) {
       setWelcomeMessage(`Welcome, ${user.user_metadata.full_name}!`)
@@ -34,6 +35,11 @@ export default function DashboardPage() {
   const handleSignOut = async () => {
     await supabase.auth.signOut()
     window.location.href = '/login'
+  }
+
+  // Triggered when a transaction is added via RecentTransactions callback
+  const handleTransactionAdded = () => {
+    setRefreshKey(prev => prev + 1)
   }
 
   return (
@@ -82,26 +88,38 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Add Transaction Button */}
+        <div className="flex justify-end">
+          <Button
+            className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+            onClick={() => setIsTransactionFormOpen(true)}
+          >
+            <Plus className="w-4 h-4" /> Add Transaction
+          </Button>
+        </div>
+
         {/* Transaction Form Modal */}
         <TransactionForm
           isOpen={isTransactionFormOpen}
           onClose={() => setIsTransactionFormOpen(false)}
           onSuccess={() => {
             setIsTransactionFormOpen(false)
-            setRefreshKey(prev => prev + 1)
+            setRefreshKey(prev => prev + 1) // refresh RecentTransactions and WalletCard
           }}
         />
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Wallet */}
           <div className="lg:col-span-1">
-            <WalletCard />
+            <WalletCard refreshTrigger={refreshKey} />
           </div>
 
+          {/* Recent Transactions */}
           <div className="lg:col-span-2 space-y-6">
             <RecentTransactions
-              key={refreshKey}
-              onTransactionAdded={() => setRefreshKey(prev => prev + 1)}
+              key={refreshKey} // forces re-render on transaction add
+              onTransactionAdded={handleTransactionAdded} // handle subscription additions
             />
           </div>
         </div>
